@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video, Circle, and Animation</title>
+  <style>
+    #canvas-container {
+      position: relative;
+    }
+
+    #canvas, #canvas2 {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border: 1px solid black;
+}
+
+   #text-input {
+    position: absolute;
+    left: 50%; /* Example to bring it to the center */
+    transform: translateX(-50%); /* Adjust as needed */
+    padding: 5px;
+    border: 1px solid black;
+    z-index: 3; 
+}
+
+    #canvas2 {
+      z-index: 2; 
+}
+
+  #controls-container {
+    position: absolute;
+    top: 10px;  
+    right: 10px; 
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+</head>
+
+<body>
+  <input type="file" id="videoInput" accept="video/*">
+  <div id="canvas-container">
+    <canvas id="canvas"></canvas>
+    <canvas id="canvas2"></canvas>
+    <div id="text-input" contentEditable="true" placeholder="Enter text"></div>
+  </div>
+
+  <!-- Preview Controls -->
+<!-- Controls Container -->
+<div id="controls-container">
+  <button id="playPauseButton" disabled>Play/Pause</button>
+  <input type="range" id="seekSlider" min="0" value="0" style="width: 300px;" disabled>
+</div>
+
+  <script>
+    $(document).ready(function () {
+      var canvas = $("#canvas")[0];
+      var canvas2 = $("#canvas2")[0];
+      var c = canvas.getContext("2d");
+      var c2 = canvas2.getContext("2d");
+      var dragging = false;
+      var dragStartX, dragStartY;
+
+  $('#canvas2').mousedown(function (e) {
+    dragging = true;
+    var canvas2Pos = $(this).offset();
+    dragStartX = e.pageX - canvas2Pos.left;
+    dragStartY = e.pageY - canvas2Pos.top;
+    $(this).css('cursor', 'move');
+
+    // Bind the mousemove event
+    $(document).on('mousemove', function (e) {
+      if (dragging) {
+        var x = e.pageX - dragStartX;
+        var y = e.pageY - dragStartY;
+        $('#canvas2').css({ left: x, top: y });
+      }
+    });
+
+  
+    e.preventDefault();
+  });
+
+  $(document).mouseup(function () {
+    if (dragging) {
+      dragging = false;
+      $('#canvas2').css('cursor', 'default');
+      $(document).off('mousemove');
+    }
+  });
+
+      const animationConfig = {
+        duration: 1,
+        interval: 300,
+        delay: 500,
+        color: "black"
+      };
+
+      const animationConfig1 = {
+        duration: 1,
+        interval: 300,
+        delay: 500,
+        color: "black"
+      };
+
+      var video = document.createElement('video');
+      var videoInput = document.getElementById('videoInput');
+      var textInput = document.getElementById('text-input');
+      var playPauseButton = document.getElementById('playPauseButton');
+      var rewindButton = document.getElementById('rewindButton');
+      var x = 0;
+
+      var isPlaying = false;
+
+      video.addEventListener('loadedmetadata', function () {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas2.width = video.videoWidth;
+        canvas2.height = video.videoHeight;
+        document.getElementById('seekSlider').max = video.duration;
+        document.getElementById('seekSlider').disabled = false;
+      });
+       video.addEventListener('play', function () {
+        isPlaying = true;
+        playPauseButton.textContent = 'Pause';
+        rewindButton.disabled = false;
+
+        (function loop() {
+          if (!video.paused && !video.ended) {
+            c.clearRect(0, 0, canvas.width, canvas.height);
+            c.drawImage(video, 0, 0);
+            setTimeout(loop, 1000 / 30);
+
+          }
+        })();
+      }, 0);
+
+       video.addEventListener('play', function () {
+        isPlaying = true;
+        playPauseButton.textContent = 'Pause';
+        rewindButton.disabled = false;
+
+        (function loopWithAnimations() {
+          if (!video.paused && !video.ended) {
+            startAnimations();
+            startAnimations1();
+            drawText();
+          }
+        })();
+      }, 0);
+      
+
+      video.addEventListener('pause', function () {
+        isPlaying = false;
+        playPauseButton.textContent = 'Play';
+      });
+
+      videoInput.addEventListener('change', function (event) {
+        var file = event.target.files[0];
+        if (file) {
+          var objectURL = URL.createObjectURL(file);
+          video.src = objectURL;
+          video.load();
+          playPauseButton.disabled = false;
+          rewindButton.disabled = false;
+          video.addEventListener('loadedmetadata', function() {
+                document.getElementById('seekSlider').max = video.duration;
+            });
+        }
+      });
+
+      document.getElementById('seekSlider').addEventListener('input', function () {
+            video.currentTime = this.value;
+        });
+
+        // Update the slider as the video plays
+        video.addEventListener('timeupdate', function () {
+            document.getElementById('seekSlider').value = video.currentTime;
+        });
+
+      playPauseButton.addEventListener('click', function () {
+        if (isPlaying) {
+          video.pause();
+        } else {
+          video.play();
+        }
+      });
+
+      function drawText() {
+        var text = textInput.innerText;
+        c2.fillStyle = 'white';
+        c2.strokeStyle = 'black';
+        c2.lineWidth = 2;
+        c2.font = '16px Arial';
+        var textWidth = c2.measureText(text).width;
+        var xCoordinate = (canvas2.width - textWidth) / 2;
+        c2.fillText(text, xCoordinate, 110);
+        c2.strokeText(text, xCoordinate, 110);
+      }
+
+      function animateLine(startX, startY, endX, endY) {
+        let amount = 0;
+        const interval = setInterval(function () {
+          amount += animationConfig.duration;
+          if (amount > 1) amount = 1;
+          c2.strokeStyle = animationConfig.color;
+          c2.beginPath();
+          c2.moveTo(startX, startY);
+          c2.lineTo(startX + (endX - startX) * amount, startY + (endY - startY) * amount);
+          c2.stroke();
+
+          if (amount >= 1) {
+            clearInterval(interval);
+          }
+        }, animationConfig.interval);
+      }
+
+      function startAnimations() {
+        c2.clearRect(0, 0, canvas2.width, canvas2.height);
+        animateLine(20, 20, 40, 20);
+        setTimeout(() => animateLine(40, 20, 40, 40), animationConfig.delay);
+        setTimeout(() => animateLine(40, 40, 20, 40), 2 * animationConfig.delay);
+        setTimeout(() => animateLine(20, 40, 20, 20), 3 * animationConfig.delay);
+      }
+
+      function animateLine1(startX, startY, endX, endY) {
+        let amount = 0;
+        const interval = setInterval(function () {
+          amount += animationConfig1.duration;
+          if (amount > 1) amount = 1;
+          c2.strokeStyle = animationConfig1.color;
+          c2.beginPath();
+          c2.moveTo(startX, startY);
+          c2.lineTo(startX + (endX - startX) * amount, startY + (endY - startY) * amount);
+          c2.stroke();
+
+          if (amount >= 1) {
+            clearInterval(interval);
+          }
+        }, animationConfig1.interval);
+      }
+
+      function startAnimations1() {
+        c2.clearRect(0, 0, canvas2.width, canvas2.height);
+        animateLine1(60, 60, 60, 60);
+        setTimeout(() => animateLine1(60, 60, 60, 60), animationConfig1.delay);
+        setTimeout(() => animateLine1(60, 60, 60, 60), 2 * animationConfig1.delay);
+        setTimeout(() => animateLine1(60, 60, 60, 60), 3 * animationConfig1.delay);
+      }
+    });
+  </script>
+</body>
+
+</html>
